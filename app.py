@@ -1,11 +1,38 @@
 import streamlit as st
+import json
+import os
 from datetime import datetime, timedelta
 
-# ---- TITLE ----
-st.title("📚 Exam Preparation Checklist")
-st.subheader("From Task 1 to 101 - Let's go unit by unit!")
+# ---- SETTINGS ----
+STATE_FILE = "checklist_state.json"
+TOTAL_TASKS = 101
 
-# ---- TIME MANAGEMENT ----
+# ---- FUNCTIONS ----
+def load_state():
+    if os.path.exists(STATE_FILE):
+        with open(STATE_FILE, "r") as f:
+            return json.load(f)
+    return {}
+
+def save_state(state):
+    with open(STATE_FILE, "w") as f:
+        json.dump(state, f)
+
+def checklist(unit_name, start, end):
+    st.markdown(f"### ✅ {unit_name}")
+    for i in range(start, end + 1):
+        key = f"task_{i}"
+        current_val = checklist_state.get(key, False)
+        updated_val = st.checkbox(f"Task {i}", value=current_val, key=key)
+        checklist_state[key] = updated_val
+
+# ---- LOAD STATE ----
+checklist_state = load_state()
+
+# ---- TITLE & TIME ----
+st.title("📚 Exam Checklist with Save")
+st.subheader("Persistent Tasks 1–101")
+
 exam_time = datetime.now().replace(hour=9, minute=30, second=0, microsecond=0) + timedelta(days=1)
 now = datetime.now()
 time_left = exam_time - now
@@ -13,27 +40,24 @@ time_left = exam_time - now
 hours_left = time_left.total_seconds() / 3600
 st.info(f"⏰ Time left until exam: **{int(hours_left)} hours and {int((hours_left%1)*60)} minutes**")
 
-# ---- DIVIDE TIME PER UNIT ----
+# ---- UNIT TIME ALLOCATION ----
 unit_names = ['Unit 1 (1–16)', 'Unit 2 (17–40)', 'Unit 3 (41–65)', 'Unit 4 (66–85)', 'Unit 5 (86–101)']
-unit_lengths = [16, 24, 25, 20, 16]
-total_tasks = sum(unit_lengths)
-unit_times = [(length / total_tasks) * hours_left for length in unit_lengths]
+unit_ranges = [(1, 16), (17, 40), (41, 65), (66, 85), (86, 101)]
+unit_lengths = [end - start + 1 for (start, end) in unit_ranges]
+unit_times = [(l / TOTAL_TASKS) * hours_left for l in unit_lengths]
 
-st.markdown("### 🕒 Suggested Time Allocation per Unit:")
-for unit, time in zip(unit_names, unit_times):
-    st.write(f"- **{unit}**: {int(time)} hr {int((time % 1) * 60)} min")
+st.markdown("### 🕒 Suggested Time Allocation:")
+for name, t in zip(unit_names, unit_times):
+    st.write(f"- **{name}**: {int(t)} hr {int((t % 1) * 60)} min")
 
-# ---- CHECKLIST FUNCTION ----
-def checklist(unit_name, start, end):
-    st.markdown(f"### ✅ {unit_name}")
-    for i in range(start, end + 1):
-        st.checkbox(f"Task {i}", key=f"{unit_name}_task_{i}")
+# ---- CHECKLIST SECTIONS ----
+for name, (start, end) in zip(unit_names, unit_ranges):
+    checklist(name, start, end)
 
-# ---- CHECKLISTS BY UNIT ----
-checklist("Unit 1 (1–16)", 1, 16)
-checklist("Unit 2 (17–40)", 17, 40)
-checklist("Unit 3 (41–65)", 41, 65)
-checklist("Unit 4 (66–85)", 66, 85)
-checklist("Unit 5 (86–101)", 86, 101)
+# ---- SAVE BUTTON ----
+if st.button("💾 Save Progress"):
+    save_state(checklist_state)
+    st.success("Checklist progress saved successfully!")
 
-st.success("✨ All the best for your exam! You've got this!")
+# ---- AUTO SAVE (optional) ----
+save_state(checklist_state)
