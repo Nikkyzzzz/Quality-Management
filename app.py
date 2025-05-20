@@ -33,10 +33,18 @@ checklist_state = load_state()
 st.title("📚 Exam Checklist with Save")
 st.subheader("Persistent Tasks 1–101")
 
-exam_time = datetime.now().replace(hour=9, minute=30, second=0, microsecond=0) + timedelta(days=1)
-now = datetime.now()
-time_left = exam_time - now
+from datetime import datetime, timedelta
 
+now = datetime.now()
+
+# If it's already past 9:30 AM today, set it for tomorrow
+exam_time = datetime.combine(
+    now.date(), datetime.strptime("09:30", "%H:%M").time()
+)
+if now.time() > exam_time.time():
+    exam_time += timedelta(days=1)
+
+time_left = exam_time - now
 hours_left = time_left.total_seconds() / 3600
 st.info(f"⏰ Time left until exam: **{int(hours_left)} hours and {int((hours_left%1)*60)} minutes**")
 
